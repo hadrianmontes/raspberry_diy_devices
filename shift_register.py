@@ -9,7 +9,7 @@ class ShiftRegister(object):
     """
     Impletens an N bit shift register
     """
-    DELAY = 0.01
+    DELAY = 0.0001
 
     def __init__(self, datapin, clockpin, shiftpin, nbits=8):
         self._datapin = datapin

@@ -3,6 +3,7 @@ import time
 from ctypes import c_short
 from ctypes import c_byte
 from ctypes import c_ubyte
+from enum import Enum
 
 
 class BME280(object):
@@ -43,6 +44,9 @@ class BME280(object):
         self._data = {"temperature": None,
                       "pressure": None,
                       "humidity": None}
+        self._config = {"mode": Modes.FORCE,
+                        "temperature_oversampling": Oversampling.x1,
+                        "pressure_oversampling": Oversampling.x1}
 
         if address is None:
             self._address = self.DEFAULT_ADDRESS
@@ -85,6 +89,15 @@ class BME280(object):
         self._data["pressure"] = self._refine_pressure(pres_raw)
         self._data["humidity"] = self._refine_humidity(hum_raw)
 
+    def _write_conf(self):
+        temp_over = self._config["temperature_oversampling"].value
+        press_over = self._config["pressure_oversampling"].value
+        mode = self._config["mode"].value
+        value = (temp_over << 5) | (press_over << 2) | mode
+        self.bus.write_byte_data(self.address,
+                                 self.REGISTERS["CRTL_MEAS"],
+                                 value)
+
     @staticmethod
     def _combine_bytes(first, second):
         return (second << 8) + first
@@ -95,8 +108,8 @@ class BME280(object):
                                                             0xD0, 2)
 
     def _refine_humidity(self, humidity):
-        return humidity
- 
+        return
+
     def _refine_temperature(self, temperature):
         """
         Temperature must be int 32
@@ -206,4 +219,25 @@ class BME280(object):
         """
         Updates the readings of the sensor
         """
+        self._write_conf()
+        time.sleep(0.1)
         self._read_data()
+
+class Modes(Enum):
+    """
+    Different modes for the bme280
+    """
+    SLEEP = 0
+    FORCE = 1
+    NORMAL = 3
+
+class Oversampling(Enum):
+    """
+    Different Oversampling
+    """
+    SKIP = 0
+    x1 = 1
+    x2 = 2
+    x4 = 3
+    x8 = 4
+    x16 = 5
